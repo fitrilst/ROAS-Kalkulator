@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ROAS Calculator</title>
+<style>
+:root{--bg:#fcedf1;--card:#fff8fa;--ink:#3a1e29;--mute:#85616f;--line:#f0cdd8;--off:#d9aebd;--acc:#c2185b;--good:#1f7a4d;--bad:#c62f2f;--soft:#f9d9e3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1218;--card:#2a1a22;--ink:#fbe9ef;--mute:#c39aa9;--line:#47303a;--off:#5a3d49;--acc:#ff7aa8;--good:#3fc582;--bad:#ff7a7a;--soft:#3a2230}}
+:root[data-theme="dark"]{--bg:#1f1218;--card:#2a1a22;--ink:#fbe9ef;--mute:#c39aa9;--line:#47303a;--off:#5a3d49;--acc:#ff7aa8;--good:#3fc582;--bad:#ff7a7a;--soft:#3a2230}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:28px;margin:0 0 4px}
+.sub{color:var(--mute);margin:0 0 24px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 4px}
+.hint{color:var(--mute);font-size:13px;margin:0 0 12px}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 2px}
+.f{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--bg);overflow:hidden}
+.f:focus-within{border-color:var(--acc);outline:2px solid var(--acc);outline-offset:1px}
+.f span{padding:0 12px;color:var(--mute);font-size:14px}
+.f input,.f select{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;padding:10px 12px;outline:0}
+.f span+input{padding-left:0}
+.f select{flex:none;width:auto;border-left:1px solid var(--line);cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.sw{position:relative;width:44px;height:26px;flex:none}
+.sw input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:13px;background:var(--off);transition:.15s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.15s}
+.sw input:checked+i{background:var(--acc)}
+.sw input:checked+i::after{transform:translateX(18px)}
+.sw input:focus-visible+i{outline:2px solid var(--acc);outline-offset:2px}
+.extra{display:grid;grid-template-columns:1fr 110px 36px;gap:8px;margin-top:10px}
+.extra .f input{padding:9px 10px}
+button{font:inherit;cursor:pointer}
+.add{background:none;border:1px dashed var(--line);color:var(--acc);border-radius:8px;padding:9px;width:100%;margin-top:12px}
+.del{background:none;border:1px solid var(--line);color:var(--mute);border-radius:8px}
+#empty{color:var(--mute);text-align:center;padding:8px 0}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.k{background:var(--soft);border-radius:10px;padding:14px}
+.k small{display:block;color:var(--mute);font-size:13px}
+.k b{font-size:26px;display:block}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 0;border-bottom:1px solid var(--line);text-align:left}
+td:last-child,th:last-child{text-align:right}
+tr.t td{font-weight:700;border-bottom:0}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.wrap{overflow-x:auto}
+@media(max-width:480px){.big{grid-template-columns:1fr}.extra{grid-template-columns:1fr 90px 34px}}
+</style>
+</head>
+<body>
+<main>
+<h1>ROAS Calculator</h1>
+<p class="sub">Hitung profitabilitas produk &amp; target ROAS iklan kamu.</p>
+
+<section>
+<h2>Data Produk</h2>
+<label for="price">Harga Jual / AOV*</label>
+<p class="hint" style="margin:0 0 6px">Harga jual per produk (Average Order Value).</p>
+<div class="f"><span>Rp</span><input id="price" type="text" inputmode="numeric" placeholder="150.000"></div>
+<label for="cogs">COGS / HPP*</label>
+<p class="hint" style="margin:0 0 6px">Modal per produk — harga beli atau biaya produksi.</p>
+<div class="f"><span>Rp</span><input id="cogs" type="text" inputmode="numeric" placeholder="60.000"></div>
+</section>
+
+<section>
+<div class="row"><div><h2>PPN — Status PKP</h2>
+<p class="hint" style="margin:0">Aktifkan jika kamu PKP (omzet &gt; Rp 4,8 M/tahun wajib pungut PPN). Non-PKP tidak memungut PPN. Harga jual dianggap sudah termasuk PPN 11%.</p></div>
+<label class="sw" aria-label="Status PKP"><input id="pkp" type="checkbox"><i></i></label></div>
+</section>
+
+<section>
+<h2>Biaya Fee Marketplace</h2>
+<p class="hint">Pilih % dari Harga Jual atau nominal Rp per order. Kosongkan jika tidak ada.</p>
+<label for="admin">Biaya Administrasi Marketplace</label>
+<p class="hint" style="margin:0 0 6px">Biaya admin platform (Shopee, Tokopedia, dll). Contoh: 10%</p>
+<div class="f"><input id="admin" type="text" inputmode="decimal" placeholder="10"><select id="adminT" aria-label="Satuan biaya admin"><option value="pct">%</option><option value="rp">Rp</option></select></div>
+<label for="prog">Biaya Program Marketplace (jika ada)</label>
+<p class="hint" style="margin:0 0 6px">Total % biaya program yang kamu ikuti: gratis ongkir, voucher, flash sale, dll.</p>
+<div class="f"><input id="prog" type="text" inputmode="decimal" placeholder="5"><select id="progT" aria-label="Satuan biaya program"><option value="pct">%</option><option value="rp">Rp</option></select></div>
+</section>
+
+<section>
+<div class="row"><div><h2>Biaya Iklan</h2>
+<p class="hint" style="margin:0">Platform seperti Shopee Ads, TikTok Ads, dan Meta Ads mengenakan PPN 12% di atas biaya iklan. Target ROAS akan otomatis disesuaikan.</p>
+<label for="adppn" style="margin-top:10px">PPN 12% dari Biaya Iklan</label>
+<p class="hint" style="margin:0">Berlaku untuk Shopee Ads, TikTok Ads, Meta Ads</p></div>
+<label class="sw" aria-label="PPN biaya iklan"><input id="adppn" type="checkbox" checked><i></i></label></div>
+</section>
+
+<section>
+<h2>Biaya Tambahan</h2>
+<p class="hint">Biaya lain yang tidak tercakup di atas — bisa dalam Rp (nominal tetap) atau % dari Harga Jual.</p>
+<div id="extras"></div>
+<button class="add" id="addx" type="button">+ Tambah biaya lainnya</button>
+</section>
+
+<section id="out"><div id="empty">Isi <b>Harga Jual</b> dan <b>COGS/HPP</b> untuk melihat kalkulasi.</div></section>
+
+<section id="mtsec" hidden><h2>Custom Margin Target</h2><p class="hint">Target Contribution Margin atau Profit Margin Before OPEX, dihitung dari Harga Jual setelah biaya iklan.</p><label for="mt">Persentase Margin yang Diinginkan</label><div class="f"><input id="mt" type="text" inputmode="decimal" placeholder="20"><span>%</span></div><div id="mtout" style="margin-top:14px"></div></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const num=s=>{s=String(s||"").trim();if(!s)return 0;s=s.replace(/\./g,"").replace(",",".");const n=parseFloat(s);return isNaN(n)?0:n};
+const rp=n=>(n<0?"-":"")+"Rp "+Math.round(Math.abs(n)).toLocaleString("id-ID");
+const pct=n=>n.toLocaleString("id-ID",{maximumFractionDigits:1})+"%";
+const x2=n=>n.toLocaleString("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2});
+["price","cogs"].forEach(id=>$(id).addEventListener("input",e=>{const d=e.target.value.replace(/\D/g,"");e.target.value=d?Number(d).toLocaleString("id-ID"):"";calc()}));
+["admin","adminT","prog","progT","pkp","adppn","mt"].forEach(id=>$(id).addEventListener("input",calc));
+let xs=0;
+$("addx").onclick=()=>{
+  const d=document.createElement("div");d.className="extra";
+  d.innerHTML='<div class="f"><input class="xn" placeholder="Nama biaya" aria-label="Nama biaya"></div><div class="f"><input class="xv" inputmode="decimal" placeholder="0" aria-label="Nilai"><select class="xt" aria-label="Satuan"><option value="rp">Rp</option><option value="pct">%</option></select></div><button class="del" type="button" aria-label="Hapus">×</button>';
+  d.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",calc));
+  d.querySelector(".del").onclick=()=>{d.remove();calc()};
+  $("extras").appendChild(d);
+};
+function calc(){
+  const P=num($("price").value),C=num($("cogs").value);
+  const out=$("out");
+  if(!P||!C){$("mtsec").hidden=true;out.innerHTML='<div id="empty">Isi <b>Harga Jual</b> dan <b>COGS/HPP</b> untuk melihat kalkulasi.</div>';return}
+  const ppn=$("pkp").checked?P-P/1.11:0;
+  const net=P-ppn;
+  const fee=(i,t)=>$(t).value==="rp"?num($(i).value):P*num($(i).value)/100;const adm=fee("admin","adminT"),prg=fee("prog","progT");
+  let ex=0;
+  document.querySelectorAll(".extra").forEach(d=>{const v=num(d.querySelector(".xv").value);ex+=d.querySelector(".xt").value==="pct"?P*v/100:v});
+  const profit=net-C-adm-prg-ex;
+  const k=$("adppn").checked?1.12:1;
+  const bep=profit>0?P*k/profit:null;
+  const margin=profit/P*100;
+  const tgt=m=>{const left=profit-P*m/100;return left>0?P*k/left:null};
+  const maxAd=profit>0?profit/k:0;
+  const rows=[["Harga jual",rp(P)]];
+  if(ppn)rows.push(["PPN 11%","-"+rp(ppn).replace("-","")]);
+  rows.push(["COGS / HPP","-"+rp(C)]);
+  if(adm)rows.push(["Biaya admin","-"+rp(adm)]);
+  if(prg)rows.push(["Biaya program","-"+rp(prg)]);
+  if(ex)rows.push(["Biaya tambahan","-"+rp(ex)]);
+  const tr=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")+
+    `<tr class="t"><td>Profit sebelum iklan</td><td class="${profit>=0?"pos":"neg"}">${rp(profit)} (${pct(margin)})</td></tr>`;
+  const tg=[5,10,20].map(m=>{const r=tgt(m);return `<tr><td>Profit bersih ${m}% dari harga jual</td><td>${r?x2(r)+"x":"Tidak tercapai"}</td></tr>`}).join("");
+  out.innerHTML=
+   `<div class="big"><div class="k"><small>Break-even ROAS</small><b>${bep?x2(bep)+"x":"—"}</b></div>
+    <div class="k"><small>Maks. biaya iklan per order</small><b>${rp(maxAd)}</b></div></div>
+    ${profit<=0?'<p class="neg">Profit sebelum iklan sudah nol atau negatif. Naikkan harga atau turunkan biaya.</p>':""}
+    <div class="wrap"><table><thead><tr><th>Rincian per order</th><th></th></tr></thead><tbody>${tr}</tbody></table></div>
+    <div class="wrap" style="margin-top:14px"><table><thead><tr><th>Target ROAS</th><th></th></tr></thead><tbody>${tg}</tbody></table></div>
+    <p class="hint" style="margin-top:10px">${$("adppn").checked?"Target ROAS sudah memasukkan PPN 12% atas biaya iklan.":"Target ROAS tanpa PPN iklan."}</p>`;
+  $("mtsec").hidden=false;
+  const m=num($("mt").value),box=$("mtout");
+  if(!$("mt").value.trim()){box.innerHTML='<p class="hint">Masukkan target margin untuk melihat ROAS target.</p>'}
+  else{const left=profit-P*m/100,r=left>0?P*k/left:null;
+   box.innerHTML=r?`<div class="big"><div class="k"><small>ROAS target</small><b>${x2(r)}x</b></div><div class="k"><small>Maks. biaya iklan per order</small><b>${rp(left/k)}</b></div></div><div class="wrap"><table><tbody><tr><td>Profit target per order (${pct(m)})</td><td>${rp(P*m/100)}</td></tr><tr><td>Batas ACOS (biaya iklan ÷ harga jual)</td><td>${pct(left/k/P*100)}</td></tr></tbody></table></div>`:`<p class="neg">Target ${pct(m)} tidak tercapai. Margin maksimal sebelum iklan: ${pct(margin)}.</p>`}
+}
+</script>
+</body>
+</html>
